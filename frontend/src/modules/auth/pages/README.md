@@ -1,0 +1,3 @@
+# Auth Pages
+
+Authentication pages.
