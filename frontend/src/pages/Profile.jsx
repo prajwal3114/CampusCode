@@ -1,13 +1,89 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import Tabs from '../components/ui/Tabs';
 import ProgressBar from '../components/ui/ProgressBar';
+import Toast from '../components/ui/Toast';
 
 export default function Profile() {
+  const { user } = useAuth();
+  const fileInputRef = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  
+  const [profileData, setProfileData] = useState({
+    fullName: 'John Doe',
+    username: 'johndoe_dev',
+    email: 'john.doe@stanford.edu',
+    college: 'Stanford University',
+    bio: 'Computer Science',
+    avatar: null,
+    tags: ['Full Stack Developer', 'Algorithm Enthusiast', 'ML Explorer']
+  });
+
+  const [editForm, setEditForm] = useState({ ...profileData });
+  const [newTag, setNewTag] = useState('');
+
+  useEffect(() => {
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+      const parsed = JSON.parse(savedProfile);
+      setProfileData(parsed);
+      setEditForm(parsed);
+    }
+  }, []);
+
+  const handleEditChange = (field, value) => {
+    setEditForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditForm(prev => ({ ...prev, avatar: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddTag = () => {
+    if (newTag.trim() && editForm.tags.length < 5) {
+      setEditForm(prev => ({ ...prev, tags: [...prev.tags, newTag.trim()] }));
+      setNewTag('');
+    }
+  };
+
+  const handleRemoveTag = (index) => {
+    setEditForm(prev => ({
+      ...prev,
+      tags: prev.tags.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSave = () => {
+    if (!editForm.fullName.trim() || !editForm.username.trim()) {
+      setToastMessage('Name and username are required');
+      setShowToast(true);
+      return;
+    }
+
+    setProfileData(editForm);
+    localStorage.setItem('userProfile', JSON.stringify(editForm));
+    setIsEditing(false);
+    setToastMessage('Profile updated successfully');
+    setShowToast(true);
+  };
+
+  const handleCancel = () => {
+    setEditForm({ ...profileData });
+    setIsEditing(false);
+  };
 
   const userStats = [
     { label: 'Courses Completed', value: '4', icon: '📚' },
@@ -127,6 +203,13 @@ export default function Profile() {
     <>
       <Navbar />
       <Sidebar />
+      {showToast && (
+        <Toast
+          message={toastMessage}
+          type="success"
+          onClose={() => setShowToast(false)}
+        />
+      )}
       <div className="ml-64 mt-16 p-8">
         <div className="max-w-6xl mx-auto">
           <Card neonBorder className="mb-8 relative overflow-hidden">
@@ -134,41 +217,190 @@ export default function Profile() {
             
             <div className="relative flex flex-col md:flex-row items-center gap-6">
               <div className="relative">
-                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-neon-cyan via-neon-purple to-neon-pink p-1 shadow-glow-lg">
-                  <div className="w-full h-full rounded-full bg-dark-bg flex items-center justify-center">
-                    <span className="text-4xl font-bold neon-text">JD</span>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <div 
+                  onClick={() => isEditing && fileInputRef.current?.click()}
+                  className={`w-32 h-32 rounded-full bg-gradient-to-br from-neon-cyan via-neon-purple to-neon-pink p-1 shadow-glow-lg ${isEditing ? 'cursor-pointer hover:shadow-glow-xl transition-all' : ''}`}
+                >
+                  <div className="w-full h-full rounded-full bg-dark-bg flex items-center justify-center overflow-hidden">
+                    {(isEditing ? editForm.avatar : profileData.avatar) ? (
+                      <img 
+                        src={isEditing ? editForm.avatar : profileData.avatar} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-4xl font-bold neon-text">
+                        {(isEditing ? editForm.fullName : profileData.fullName).split(' ').map(n => n[0]).join('')}
+                      </span>
+                    )}
                   </div>
                 </div>
-                <div className="absolute bottom-0 right-0 w-8 h-8 bg-green-500 rounded-full border-4 border-dark-bg"></div>
+                {isEditing && (
+                  <div className="absolute bottom-0 right-0 w-10 h-10 bg-neon-cyan rounded-full border-4 border-dark-bg flex items-center justify-center cursor-pointer hover:bg-neon-purple transition-colors" onClick={() => fileInputRef.current?.click()}>
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                )}
+                {!isEditing && (
+                  <div className="absolute bottom-0 right-0 w-8 h-8 bg-green-500 rounded-full border-4 border-dark-bg"></div>
+                )}
               </div>
 
               <div className="flex-1 text-center md:text-left">
-                <div className="flex items-center gap-3 mb-2 justify-center md:justify-start">
-                  <h1 className="text-3xl font-bold text-white">John Doe</h1>
-                  <Badge status="unlocked">PRO</Badge>
-                </div>
-                <p className="text-neon-cyan mb-1">@johndoe_dev</p>
-                <p className="text-gray-400 mb-4">Stanford University • Computer Science</p>
-                
-                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                  <span className="px-3 py-1 rounded-full bg-neon-cyan/20 text-neon-cyan text-xs border border-neon-cyan/50">
-                    Full Stack Developer
-                  </span>
-                  <span className="px-3 py-1 rounded-full bg-neon-purple/20 text-neon-purple text-xs border border-neon-purple/50">
-                    Algorithm Enthusiast
-                  </span>
-                  <span className="px-3 py-1 rounded-full bg-neon-cyan/20 text-neon-cyan text-xs border border-neon-cyan/50">
-                    ML Explorer
-                  </span>
-                </div>
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs text-gray-400 block mb-1">Full Name *</label>
+                      <input
+                        type="text"
+                        value={editForm.fullName}
+                        onChange={(e) => handleEditChange('fullName', e.target.value)}
+                        className="w-full px-4 py-2 bg-dark-card border border-neon-cyan/30 rounded-lg text-white focus:outline-none focus:border-neon-cyan focus:shadow-glow-sm transition-all"
+                        placeholder="Enter your full name"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 block mb-1">Username *</label>
+                      <input
+                        type="text"
+                        value={editForm.username}
+                        onChange={(e) => handleEditChange('username', e.target.value)}
+                        className="w-full px-4 py-2 bg-dark-card border border-neon-cyan/30 rounded-lg text-white focus:outline-none focus:border-neon-cyan focus:shadow-glow-sm transition-all"
+                        placeholder="@username"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 block mb-1">Email (read-only)</label>
+                      <input
+                        type="email"
+                        value={editForm.email}
+                        disabled
+                        className="w-full px-4 py-2 bg-dark-hover border border-gray-500/30 rounded-lg text-gray-500 cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 block mb-1">
+                        {user?.role === 'ORGANIZER' ? 'Organization' : 'College'}
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.college}
+                        onChange={(e) => handleEditChange('college', e.target.value)}
+                        className="w-full px-4 py-2 bg-dark-card border border-neon-cyan/30 rounded-lg text-white focus:outline-none focus:border-neon-cyan focus:shadow-glow-sm transition-all"
+                        placeholder={user?.role === 'ORGANIZER' ? 'Organization name' : 'College name'}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 block mb-1">Bio</label>
+                      <input
+                        type="text"
+                        value={editForm.bio}
+                        onChange={(e) => handleEditChange('bio', e.target.value)}
+                        className="w-full px-4 py-2 bg-dark-card border border-neon-cyan/30 rounded-lg text-white focus:outline-none focus:border-neon-cyan focus:shadow-glow-sm transition-all"
+                        placeholder="A short bio about yourself"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 block mb-1">Skills/Tags (max 5)</label>
+                      <div className="flex gap-2 mb-2">
+                        <input
+                          type="text"
+                          value={newTag}
+                          onChange={(e) => setNewTag(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                          className="flex-1 px-4 py-2 bg-dark-card border border-neon-cyan/30 rounded-lg text-white focus:outline-none focus:border-neon-cyan focus:shadow-glow-sm transition-all"
+                          placeholder="Add a skill or tag"
+                          disabled={editForm.tags.length >= 5}
+                        />
+                        <button
+                          onClick={handleAddTag}
+                          disabled={editForm.tags.length >= 5 || !newTag.trim()}
+                          className="px-4 py-2 rounded-lg bg-gradient-to-r from-neon-cyan/20 to-neon-blue/20 border border-neon-cyan/50 text-neon-cyan hover:shadow-glow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Add
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {editForm.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 rounded-full bg-neon-cyan/20 text-neon-cyan text-xs border border-neon-cyan/50 flex items-center gap-2"
+                          >
+                            {tag}
+                            <button
+                              onClick={() => handleRemoveTag(index)}
+                              className="hover:text-red-400 transition-colors"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3 mb-2 justify-center md:justify-start">
+                      <h1 className="text-3xl font-bold text-white">{profileData.fullName}</h1>
+                      <Badge status="unlocked">{user?.role === 'ORGANIZER' ? 'ORGANIZER' : 'PRO'}</Badge>
+                    </div>
+                    <p className="text-neon-cyan mb-1">@{profileData.username}</p>
+                    <p className="text-gray-400 mb-4">{profileData.college} • {profileData.bio}</p>
+                    
+                    <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                      {profileData.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className={`px-3 py-1 rounded-full text-xs border ${
+                            index % 2 === 0
+                              ? 'bg-neon-cyan/20 text-neon-cyan border-neon-cyan/50'
+                              : 'bg-neon-purple/20 text-neon-purple border-neon-purple/50'
+                          }`}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
 
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                className="px-6 py-3 rounded-lg bg-gradient-to-r from-neon-cyan/20 to-neon-purple/20 border border-neon-cyan/50 text-neon-cyan hover:shadow-glow-md transition-all"
-              >
-                {isEditing ? 'Save Profile' : 'Edit Profile'}
-              </button>
+              <div className="flex gap-2">
+                {isEditing ? (
+                  <>
+                    <button
+                      onClick={handleCancel}
+                      className="px-6 py-3 rounded-lg bg-dark-card border border-gray-500/50 text-gray-400 hover:text-white hover:border-gray-400 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      className="px-6 py-3 rounded-lg bg-gradient-to-r from-neon-cyan/20 to-neon-purple/20 border border-neon-cyan/50 text-neon-cyan hover:shadow-glow-md transition-all"
+                    >
+                      Save Profile
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="px-6 py-3 rounded-lg bg-gradient-to-r from-neon-cyan/20 to-neon-purple/20 border border-neon-cyan/50 text-neon-cyan hover:shadow-glow-md transition-all"
+                  >
+                    Edit Profile
+                  </button>
+                )}
+              </div>
             </div>
           </Card>
 
@@ -181,6 +413,65 @@ export default function Profile() {
               </Card>
             ))}
           </div>
+
+          {user?.role === 'ORGANIZER' ? (
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-yellow-400 mb-4 flex items-center gap-2">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                Managed Clubs
+              </h2>
+              <Card neonBorder>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { name: 'Stanford CS Club', members: 234, status: 'Active' },
+                    { name: 'Advanced Algorithms', members: 189, status: 'Active' },
+                    { name: 'Web Dev Masters', members: 156, status: 'Active' },
+                    { name: 'ML Research Group', members: 98, status: 'Active' }
+                  ].map((club, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 bg-dark-hover rounded-lg border border-yellow-400/30">
+                      <div>
+                        <h4 className="text-white font-semibold mb-1">{club.name}</h4>
+                        <p className="text-sm text-gray-400">{club.members} members</p>
+                      </div>
+                      <Badge status="unlocked">{club.status}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          ) : (
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-neon-purple mb-4 flex items-center gap-2">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Joined Clubs
+              </h2>
+              <Card neonBorder>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { name: 'Stanford CS Club', role: 'Member', progress: 78 },
+                    { name: 'MIT Web Developers', role: 'Member', progress: 65 },
+                    { name: 'Berkeley ML Research', role: 'Active', progress: 92 }
+                  ].map((club, index) => (
+                    <div key={index} className="p-4 bg-dark-hover rounded-lg border border-neon-purple/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-white font-semibold">{club.name}</h4>
+                        <Badge status="member">{club.role}</Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="text-gray-400">Activity</span>
+                        <span className="text-neon-cyan font-semibold">{club.progress}%</span>
+                      </div>
+                      <ProgressBar progress={club.progress} showLabel={false} color="purple" />
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          )}
 
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-neon-purple mb-4">Skills</h2>

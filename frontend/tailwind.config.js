@@ -30,11 +30,16 @@ export default {
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'glow': 'glow 2s ease-in-out infinite',
+        'slide-in-right': 'slide-in-right 0.3s ease-out',
       },
       keyframes: {
         glow: {
           '0%, 100%': { boxShadow: '0 0 10px rgba(0, 255, 255, 0.5)' },
           '50%': { boxShadow: '0 0 20px rgba(0, 255, 255, 0.8)' },
+        },
+        'slide-in-right': {
+          '0%': { transform: 'translateX(100%)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
         }
       }
     },
