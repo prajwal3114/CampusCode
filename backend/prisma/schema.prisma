@@ -17,6 +17,8 @@ model User {
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
 
+  participations Participation[]   // ✅ Added relation
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -40,7 +42,7 @@ model Course {
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  competitions   Competition[]   // ✅ Added relation
+  competitions   Competition[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -56,8 +58,24 @@ model Competition {
   courseId    String
   course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
+  participations Participation[]   // ✅ Added relation
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Participation {
+  id            String   @id @default(uuid())
+  userId        String
+  competitionId String
+  score         Int      @default(0)
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, competitionId])   // ✅ Prevent duplicate registration
 }
 
 enum Role {
