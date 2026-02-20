@@ -6,7 +6,7 @@ import organizationRoutes from "./src/modules/organizations/organization.routes.
 import courseRoutes from "./src/modules/course/course.routes.js";
 import competitionRoutes from "./src/modules/competitions/competitions.routes.js";
 import participationRoutes from './src/modules/participation/participation.router.js';
-
+import submissionRoutes from './src/modules/submission/submission.routes.js';
 const app = express();
 
 app.use(cors());
@@ -18,6 +18,7 @@ app.use("/api/organizations", organizationRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/competitions", competitionRoutes);
 app.use('/api/participations',participationRoutes);
+app.use('/api/submissions', submissionRoutes);
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });

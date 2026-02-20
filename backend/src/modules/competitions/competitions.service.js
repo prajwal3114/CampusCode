@@ -61,11 +61,46 @@ export const createCompetition=async(userId,courseId,data)=>{
 
 export const getCompetitionsByCourse=async(courseId)=>{
     try {
+
         const competitions=await prisma.competition.findMany({
             where:{courseId:courseId}
         });
 
         return competitions;
+
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+export const updateStatus=async(userId,competitionId,status)=>{
+    try {
+
+        const user=await prisma.user.findUnique({
+            where:{id:userId}
+        });
+
+        if(!user || user.role!=='ADMIN')
+        {
+            throw new Error('Forbidden');
+        }
+
+        const competition=await prisma.competition.findUnique({
+            where:{id:competitionId}
+        });
+
+        if(!competition)
+        {
+            throw new Error('Competition not found');
+        }
+
+        const updated=await prisma.competition.update({
+            where:{id:competitionId},
+            data:{status}
+        });
+
+        return updated;
 
     } catch (error) {
         throw error;

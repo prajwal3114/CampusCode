@@ -1,5 +1,5 @@
-import { getCompetitionsByCourse,createCompetition } from "./competitions.service.js";
-import { createCompetitionSchema } from "./competitions.validation.js";
+import { getCompetitionsByCourse,createCompetition,updateStatus } from "./competitions.service.js";
+import { createCompetitionSchema,updateStatusSchema } from "./competitions.validation.js";
 
 
 export const create=async (req,res)=>{
@@ -29,6 +29,27 @@ export const list=async(req,res)=>{
         const competitions=await getCompetitionsByCourse(courseId);
 
         return res.status(200).json({competitions});
+
+    } catch (error) {
+        return res.status(400).json({message:error.message});
+    }
+};
+
+
+export const changeStatus=async(req,res)=>{
+    try {
+
+        const userId=req.user.id;
+        const competitionId=req.params.id;
+
+        const validatedData=updateStatusSchema.parse(req.body);
+
+        const competition=await updateStatus(userId,competitionId,validatedData.status);
+
+        return res.status(200).json({
+            message:'Status updated successfully',
+            competition
+        });
 
     } catch (error) {
         return res.status(400).json({message:error.message});

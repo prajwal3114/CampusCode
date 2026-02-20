@@ -17,7 +17,8 @@ model User {
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
 
-  participations Participation[]   // ✅ Added relation
+  participations Participation[]
+  submissions    Submission[]   // ✅ Added
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -55,10 +56,13 @@ model Competition {
   startDate   DateTime
   endDate     DateTime
 
+  status      CompetitionStatus @default(UPCOMING)
+
   courseId    String
   course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  participations Participation[]   // ✅ Added relation
+  participations Participation[]
+  submissions    Submission[]   // ✅ Added
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -75,11 +79,28 @@ model Participation {
 
   createdAt DateTime @default(now())
 
-  @@unique([userId, competitionId])   // ✅ Prevent duplicate registration
+  @@unique([userId, competitionId])
+}
+
+model Submission {
+  id            String   @id @default(uuid())
+  userId        String
+  competitionId String
+  score         Int
+  submittedAt   DateTime @default(now())
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
 }
 
 enum Role {
   ADMIN
   ORGANIZER
   USER
+}
+
+enum CompetitionStatus {
+  UPCOMING
+  LIVE
+  ENDED
 }

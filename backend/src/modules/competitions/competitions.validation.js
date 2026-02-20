@@ -6,3 +6,7 @@ export const createCompetitionSchema = z.object({
     startDate: z.string().datetime(),
     endDate: z.string().datetime()
 });
+
+export const updateStatusSchema = z.object({
+    status: z.enum(['UPCOMING','LIVE','ENDED'])
+});
