@@ -7,6 +7,7 @@ import courseRoutes from "./src/modules/course/course.routes.js";
 import competitionRoutes from "./src/modules/competitions/competitions.routes.js";
 import participationRoutes from './src/modules/participation/participation.router.js';
 import submissionRoutes from './src/modules/submission/submission.routes.js';
+import resourceRoutes from  './src/modules/resources/resource.routes.js';
 const app = express();
 
 app.use(cors());
@@ -19,6 +20,7 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/competitions", competitionRoutes);
 app.use('/api/participations',participationRoutes);
 app.use('/api/submissions', submissionRoutes);
+app.use('/api/resources',resourceRoutes);
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });

@@ -3,61 +3,62 @@ import prisma from '../../config/prisma.js';
 export const submitAttempt = async (userId, competitionId, score) => {
     try {
 
-        const competition = await prisma.competition.findUnique({
-            where: { id: competitionId }
-        });
+        return await prisma.$transaction(async (tx) => {
 
-        if (!competition) {
-            throw new Error('Competition not found');
-        }
-
-        if (competition.status !== 'LIVE') {
-            throw new Error('Competition is not live');
-        }
-
-        const user = await prisma.user.findUnique({
-            where: { id: userId }
-        });
-
-        if (!user) {
-            throw new Error('User not found');
-        }
-
-        const participation = await prisma.participation.findUnique({
-            where: {
-                userId_competitionId: {
-                    userId,
-                    competitionId
-                }
+            const competition = await tx.competition.findUnique({
+                where: { id: competitionId }
+            });
+            if (!competition) {
+                throw new Error('Competition not found');
             }
-        });
-
-        if (!participation) {
-            throw new Error('User not registered for this competition');
-        }
-
-        const submission = await prisma.submission.create({
-            data: {
-                userId,
-                competitionId,
-                score
+            if (competition.status !== 'LIVE') {
+                throw new Error('Competition is not live');
             }
-        });
 
-        if (score > participation.score) {
-            await prisma.participation.update({
+            const user = await tx.user.findUnique({
+                where: { id: userId }
+            });
+
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            const participation = await tx.participation.findUnique({
                 where: {
                     userId_competitionId: {
                         userId,
                         competitionId
                     }
-                },
-                data: { score }
+                }
             });
-        }
 
-        return submission;
+            if (!participation) {
+                throw new Error('User not registered for this competition');
+            }
 
+            const submission = await tx.submission.create({
+                data: {
+                    userId,
+                    competitionId,
+                    score
+                }
+            });
+
+            if (score > participation.score) {
+                await tx.participation.update({
+                    where: {
+                        userId_competitionId: {
+                            userId,
+                            competitionId
+                        }
+                    },
+                    data: { score }
+                });
+            }
+
+            return submission;
+
+        });
     } catch (error) {
         throw error;
     }

@@ -18,7 +18,7 @@ model User {
   organization   Organization? @relation(fields: [organizationId], references: [id])
 
   participations Participation[]
-  submissions    Submission[]   // ✅ Added
+  submissions    Submission[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -44,6 +44,7 @@ model Course {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   competitions   Competition[]
+  resources      Resource[]   // ✅ Added
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -62,7 +63,7 @@ model Competition {
   course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   participations Participation[]
-  submissions    Submission[]   // ✅ Added
+  submissions    Submission[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -93,6 +94,20 @@ model Submission {
   competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
 }
 
+model Resource {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  type        ResourceType
+  url         String
+
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum Role {
   ADMIN
   ORGANIZER
@@ -103,4 +118,11 @@ enum CompetitionStatus {
   UPCOMING
   LIVE
   ENDED
+}
+
+enum ResourceType {
+  PDF
+  VIDEO
+  LINK
+  ARTICLE
 }
